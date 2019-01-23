@@ -11,20 +11,26 @@ namespace SA
 
         public Color color1;
         public Color color2;
+        public Color appleColor = Color.red;
         public Color playerColor = Color.black;
 
         public Transform cameraHolder;
 
         GameObject playerObj;
         Node playerNode;
+        GameObject appleObj;
+        Node appleNode;
 
         GameObject mapObject;
         SpriteRenderer mapRenderer;
 
         Node[,] grid;
+        List<Node> availbleNodes = new List<Node>();
 
         bool up, left, right, down;
-        bool movePlayer;
+
+        public float moveRate = 0.5f;
+        float timer;
 
         Direction curDirection;
         public enum Direction
@@ -37,6 +43,8 @@ namespace SA
             CreateMap();
             PlacePlayer();
             PlaceCamera();
+            CreateApple();
+            curDirection = Direction.right;
         }
 
         void CreateMap()
@@ -62,6 +70,8 @@ namespace SA
                         worldPosition = tp
                     };
                     grid[x, y] = n;
+
+                    availbleNodes.Add(n);
 
                     if (x % 2 != 0)
                     {
@@ -113,11 +123,26 @@ namespace SA
             cameraHolder.position = p;
         }
 
+        void CreateApple()
+        {
+            appleObj = new GameObject("Apple");
+            SpriteRenderer appleRenderer = appleObj.AddComponent<SpriteRenderer>();
+            appleRenderer.sprite = CreateSprite(appleColor);
+            appleRenderer.sortingOrder = 1;
+            RandomlyPlaceApple();
+        }
+
         void Update()
         {
             GetInput();
             SetPlayerDirection();
-            MovePlayer();
+
+            timer += Time.deltaTime;
+            if (timer > moveRate)
+            {
+                timer = 0;
+                MovePlayer();
+            }
         }
 
         void GetInput()
@@ -133,33 +158,23 @@ namespace SA
             if (up)
             {
                 curDirection = Direction.up;
-                movePlayer = true;
             }
             else if (down)
             {
                 curDirection = Direction.down;
-                movePlayer = true;
             }
             else if (left)
             {
                 curDirection = Direction.left;
-                movePlayer = true;
             }
             else if (right)
             {
                 curDirection = Direction.right;
-                movePlayer = true;
             }
         }
 
         void MovePlayer()
         {
-            if (!movePlayer)
-            {
-                return;
-            }
-            movePlayer = false;
-
             int x = 0;
             int y = 0;
 
@@ -186,9 +201,38 @@ namespace SA
             }
             else
             {
+                bool isScore = false;
+
+                if(targetNode == appleNode)
+                {
+                    isScore = true;
+                }
+
+                availbleNodes.Remove(playerNode);
                 playerObj.transform.position = targetNode.worldPosition;
                 playerNode = targetNode;
+                availbleNodes.Add(playerNode);
+
+                if (isScore)
+                {
+                    if(availbleNodes.Count > 0)
+                    {
+                        RandomlyPlaceApple();
+                    }
+                    else
+                    {
+                        //you wone
+                    }
+                }
             }
+        }
+
+        void RandomlyPlaceApple()
+        {
+            int ran = Random.Range(0, availbleNodes.Count);
+            Node n = availbleNodes[ran];
+            appleObj.transform.position = n.worldPosition;
+            appleNode = n;
         }
 
         Node GetNode(int x, int y)
