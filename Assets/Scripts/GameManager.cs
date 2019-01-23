@@ -13,17 +13,30 @@ namespace SA
         public Color color2;
         public Color playerColor = Color.black;
 
+        public Transform cameraHolder;
+
         GameObject playerObj;
+        Node playerNode;
 
         GameObject mapObject;
         SpriteRenderer mapRenderer;
 
         Node[,] grid;
 
+        bool up, left, right, down;
+        bool movePlayer;
+
+        Direction curDirection;
+        public enum Direction
+        {
+            up, down, left, right
+        };
+
         private void Start()
         {
             CreateMap();
             PlacePlayer();
+            PlaceCamera();
         }
 
         void CreateMap()
@@ -78,7 +91,7 @@ namespace SA
 
             txt.Apply();
             Rect rect = new Rect(0, 0, maxWidth, maxHeight);
-            Sprite sprite = Sprite.Create(txt, rect, Vector2.one * .5f, 1, 0, SpriteMeshType.FullRect);
+            Sprite sprite = Sprite.Create(txt, rect, Vector2.zero, 1, 0, SpriteMeshType.FullRect);
             mapRenderer.sprite = sprite;
         }
 
@@ -88,7 +101,94 @@ namespace SA
             SpriteRenderer playerRender = playerObj.AddComponent<SpriteRenderer>();
             playerRender.sprite = CreateSprite(playerColor);
             playerRender.sortingOrder = 1;
-            playerObj.transform.position = GetNode(3, 3).worldPosition;
+            playerNode = GetNode(3, 3);
+            playerObj.transform.position = playerNode.worldPosition;
+        }
+
+        void PlaceCamera()
+        {
+            Node n = GetNode(maxWidth / 2, maxHeight / 2);
+            Vector3 p = n.worldPosition;
+            p += Vector3.one * .5f;
+            cameraHolder.position = p;
+        }
+
+        void Update()
+        {
+            GetInput();
+            SetPlayerDirection();
+            MovePlayer();
+        }
+
+        void GetInput()
+        {
+            up = Input.GetButtonDown("Up");
+            down = Input.GetButtonDown("Down");
+            left = Input.GetButtonDown("Left");
+            right = Input.GetButtonDown("Right");
+        }
+
+        void SetPlayerDirection()
+        {
+            if (up)
+            {
+                curDirection = Direction.up;
+                movePlayer = true;
+            }
+            else if (down)
+            {
+                curDirection = Direction.down;
+                movePlayer = true;
+            }
+            else if (left)
+            {
+                curDirection = Direction.left;
+                movePlayer = true;
+            }
+            else if (right)
+            {
+                curDirection = Direction.right;
+                movePlayer = true;
+            }
+        }
+
+        void MovePlayer()
+        {
+            if (!movePlayer)
+            {
+                return;
+            }
+            movePlayer = false;
+
+            int x = 0;
+            int y = 0;
+
+            switch (curDirection)
+            {
+                case Direction.up:
+                    y = 1;
+                    break;
+                case Direction.down:
+                    y = -1;
+                    break;
+                case Direction.left:
+                    x = -1;
+                    break;
+                case Direction.right:
+                    x = 1;
+                    break;
+            }
+
+            Node targetNode = GetNode(playerNode.x + x, playerNode.y + y);
+            if (targetNode == null)
+            {
+                //gameover
+            }
+            else
+            {
+                playerObj.transform.position = targetNode.worldPosition;
+                playerNode = targetNode;
+            }
         }
 
         Node GetNode(int x, int y)
@@ -107,7 +207,7 @@ namespace SA
             txt.filterMode = FilterMode.Point;
             txt.Apply();
             Rect rect = new Rect(0, 0, 1, 1);
-            return Sprite.Create(txt, rect, Vector2.one * .5f, 1, 0, SpriteMeshType.FullRect);
+            return Sprite.Create(txt, rect, Vector2.zero, 1, 0, SpriteMeshType.FullRect);
         }
     }
 }
